@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import time
 
+# Uses the __name__ == "__main__": conditional to run the script. 
 
 if __name__ == "__main__":
     zoopla = Scrapper()

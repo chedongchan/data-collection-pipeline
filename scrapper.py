@@ -5,6 +5,10 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import time
 
+
+#run python test_scrapper.py to test the code.
+
+
 class Scrapper:
     def __init__(self) -> None:
         self.url = "https://www.zoopla.co.uk/new-homes/property/london/?q=London&results_sort=newest_listings&search_source=new-homes&page_size=25&pn=1&view_type=list"
