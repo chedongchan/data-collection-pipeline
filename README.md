@@ -30,32 +30,27 @@ Github repo created and updated.
 
 The script.
 ```Python
-
 from soundcloud_scrapper_class import Scrapper
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-import time
-from datetime import datetime
-
 # Uses the __name__ == "__main__": conditional to run the script. 
-
 if __name__ == "__main__":
     soundcloud = Scrapper()
     driver = soundcloud.load_and_accept_cookies()
     search_word = soundcloud.search(driver)
-    soundcloud.filter_artist_results(driver)
+    soundcloud.get_artists_only(driver)
     soundcloud.artist_home_page(driver)
     artists = [search_word]
     for i in range(int(input("number of related artists you would want data from?"))+1):
-        soundcloud.go_to_tracks_page(driver)
-        songs, genre_tags, total_num_plays, images =soundcloud.collect_data(driver)
+        soundcloud.go_to_tracks_tab(driver)
+        soundcloud.scroll_and_load(driver)
+        tracks_list, song_tags_list, ministats_list, cover_art_list =soundcloud.collect_element_ids(driver)
+        songs = soundcloud.scrape_song_titles(tracks_list)
+        genre_tags = soundcloud.scrape_song_genre_tags(song_tags_list)
+        total_num_plays = soundcloud.scrape_song_num_of_times_played(ministats_list)
+        images = soundcloud.scrape_image_links(cover_art_list)
         timestamp = str(soundcloud.get_timestamp())
-        full_database= soundcloud.generate_database(artists[i],songs, genre_tags, total_num_plays, images,timestamp)
-        artist_dir,image_save_dir = soundcloud.make_data_folder(artists[i])
-        database_dir=soundcloud.save_dict_data_as_json(artists[i],full_database,artist_dir)
+        full_database = soundcloud.generate_database(artists[i],songs, genre_tags, total_num_plays, images,timestamp)
+        artist_dir,image_save_dir = soundcloud.make_data_folders(artists[i])
+        database_dir = soundcloud.save_dict_data_as_json(artists[i],full_database,artist_dir)
         soundcloud.get_imgs(image_save_dir,database_dir,timestamp)
         soundcloud.related_artists(driver,artists)
         i +=1
@@ -97,8 +92,8 @@ class Scrapper:
             This driver is already in the SoundCloud webpage
         '''
         driver = webdriver.Chrome() 
-        URL = self.url 
-        driver.get(URL)
+        initial_url = self.url 
+        driver.get(initial_url)
         delay = 10 
         try:
             WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, '//*[@id="onetrust-button-group"]')))
@@ -114,127 +109,6 @@ class Scrapper:
         time.sleep(2)
         return driver 
 
-    def get_tags(self,driver):
-        '''
-        Returns a list with all the links in the current page
-        Parameters
-        ----------
-        driver: webdriver.Chrome
-            The driver that contains information about the current page
-        
-        Returns
-        -------
-        link_list: list
-            A list with all the links in the page
-        '''
-        prop_container = driver.find_element(by=By.XPATH, value='//div[@data-testid="regular-listings"]')# change to fit the id of the html tag
-        prop_list = prop_container.find_elements(by=By.XPATH, value='./div')
-
-        return prop_list
-
-    def create_links(self,prop_list):
-
-        link_list = []
-
-        for house_property in prop_list:
-            a_tag = house_property.find_element(by=By.TAG_NAME, value='a')
-            link = a_tag.get_attribute('href')
-            link_list.append(link)
-
-        return link_list
-    
-    def multi_page_links(self,driver):
-        big_list = []
-        num_pages = input('How many pages do you want to collect data from?')
-        for i in range(int(num_pages)): # The first 5 pages only
-            big_list.extend(self.create_links(self.get_tags(driver))) 
-            pagination = driver.find_element(by=By.XPATH, value='//a[@class="eaoxhri5 css-xtzp5a-ButtonLink-Button-StyledPaginationLink eaqu47p1"]') #change to match the next page class
-            pagination.click()
-            time.sleep(1)  
-        
-        return big_list
-
-    def data_format(self):
-        key1 = input("What data type do you want? 1")
-        key2 = input("What data type do you want? 2")
-        key3 = input("What data type do you want? 3")
-        key4 = input("What data type do you want? 4")
-        dict_properties = {str(key1): [], str(key2): [], str(key3): [], str(key4): []}
-
-        return dict_properties, key1, key2, key3, key4
-
-    def collect_data(self,driver):
-            driver.current_url
-            scroll_pause_time = 1
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            while True:
-                 # Scroll down to bottom
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-
-                # Wait to load page
-                time.sleep(scroll_pause_time)
-
-                # Calculate new scroll height and compare with last scroll height
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
-
-            # try:
-            #     WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, '//*[@class="paging-eof sc-border-light-top"]')))
-            #     print("Frame Ready!")
-            #     accept_cookies_button = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, '//*[@id="onetrust-accept-btn-handler"]')))
-            #     print("Accept Cookies Button Ready!")
-            #     accept_cookies_button.click()
-            #     time.sleep(1)
-
-            # except TimeoutException:
-            #     print("Loading took too much time!")
-
-            # list of elements by unique ID.
-            tracks_list = driver.find_elements(by=By.XPATH, value='//*[@class="sc-link-primary soundTitle__title sc-link-dark sc-text-h4"]')
-            cover_art_list= driver.find_elements(by=By.XPATH, value='//a[@class="sound__coverArt"]')
-            song_tags_list= driver.find_elements(by=By.XPATH, value='//a[@class="sc-tag soundTitle__tag sc-tag-small"]')
-            ministats_list = driver.find_elements(by=By.XPATH, value='//span[@class="sc-ministats sc-ministats-small  sc-ministats-plays sc-text-secondary"]')
-
-            # find title of song and add to list.
-            songs=[]
-            for track_atags in tracks_list[:-3]:
-                song_title =track_atags.find_element(by=By.XPATH, value='.//span').get_attribute("textContent")
-
-                songs.append(song_title)
-
-            # find image links for each song.
-            images =[]
-            for cover_art in cover_art_list:
-                span_tag = cover_art.find_element(by=By.XPATH, value='.//span')
-                tag_attribute =span_tag.get_attribute('style')
-                span_tag.location_once_scrolled_into_view
-                time.sleep(1)
-                cover_art_url =re.search('"(.*?)"',tag_attribute)
-                images.append(cover_art_url.group(0))
-            
-            # find song genre tags.
-            genre_tags = []
-            for song_tag in song_tags_list:
-                genre_tag = song_tag.find_element(by=By.XPATH, value='.//span[@class="sc-truncate sc-tagContent"]').get_attribute("textContent")
-                genre_tags.append(genre_tag)
-            
-            # get number of times played for each song. 
-            total_num_plays = []
-            for stat in ministats_list[:-3]:
-                num_plays = stat.find_element(by=By.XPATH, value='.//span[@aria-hidden="true"]').get_attribute("textContent")
-                total_num_plays.append(num_plays)
-            
-            return songs, genre_tags, total_num_plays, images
-
-    def get_timestamp(self):
-        timestamp_now = datetime.now()
-        str_date_time = timestamp_now.strftime("%d%m%Y_%H%M%S_")
-
-        
-        return str_date_time
-    
     def search(self,driver):
         search_bar= driver.find_elements(by=By.XPATH, value='//*[@class="headerSearch__input sc-input g-all-transitions-300"]')
         search_bar[1].click()
@@ -243,10 +117,9 @@ class Scrapper:
         time.sleep(1)
         search_bar[1].send_keys(Keys.RETURN)
         time.sleep(2)
-
         return search_word
 
-    def filter_artist_results(self, driver):
+    def get_artists_only(self, driver):
         driver.current_url
         sidebar_elements = driver.find_element(by= By.XPATH, value='//*[@class="searchOptions__container"]')
         sidebar = sidebar_elements.find_elements(by= By.XPATH, value= './/li')
@@ -262,13 +135,77 @@ class Scrapper:
         artist_link_atag.click()
         time.sleep(2)
     
-    def go_to_tracks_page(self,driver):
+    def go_to_tracks_tab(self,driver):
         driver.current_url
         track_tag = driver.find_elements(by= By.XPATH, value='//*[@class="g-tabs-link"]')
         track_tag[1].click()
-        
         time.sleep(5)
 
+    def scroll_and_load(self,driver):
+        scroll_pause_time = 1
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        while True:
+                # Scroll down to bottom
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+            # Wait to load page
+            time.sleep(scroll_pause_time)
+
+            # Calculate new scroll height and compare with last scroll height
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
+
+    def collect_element_ids(self,driver):
+        driver.current_url
+        # list of elements by unique ID/class.
+        tracks_list = driver.find_elements(by=By.XPATH, value='//*[@class="sc-link-primary soundTitle__title sc-link-dark sc-text-h4"]')
+        song_tags_list= driver.find_elements(by=By.XPATH, value='//a[@class="sc-tag soundTitle__tag sc-tag-small"]')
+        ministats_list = driver.find_elements(by=By.XPATH, value='//span[@class="sc-ministats sc-ministats-small  sc-ministats-plays sc-text-secondary"]')
+        cover_art_list= driver.find_elements(by=By.XPATH, value='//a[@class="sound__coverArt"]')
+        return tracks_list,song_tags_list,ministats_list,cover_art_list
+
+    def scrape_song_titles(self,tracks_list):
+        # find title of song and add to list.
+        songs=[]
+        for track_atags in tracks_list[:-3]:
+            song_title =track_atags.find_element(by=By.XPATH, value='.//span').get_attribute("textContent")
+            songs.append(song_title)
+        return songs
+
+    def scrape_song_genre_tags(self,song_tags_list):
+        # find song genre tags.
+        genre_tags = []
+        for song_tag in song_tags_list:
+            genre_tag = song_tag.find_element(by=By.XPATH, value='.//span[@class="sc-truncate sc-tagContent"]').get_attribute("textContent")
+            genre_tags.append(genre_tag)
+        return genre_tags
+
+    def scrape_song_num_of_times_played(self,ministats_list):
+        # get number of times played for each song. 
+        total_num_plays = []
+        for stat in ministats_list[:-3]:
+            num_plays = stat.find_element(by=By.XPATH, value='.//span[@aria-hidden="true"]').get_attribute("textContent")
+            total_num_plays.append(num_plays)
+        return total_num_plays
+
+    def scrape_image_links(self,cover_art_list):
+        # find image links for each song.
+        images =[]
+        for cover_art in cover_art_list:
+            span_tag = cover_art.find_element(by=By.XPATH, value='.//span')
+            tag_attribute =span_tag.get_attribute('style')
+            span_tag.location_once_scrolled_into_view
+            time.sleep(1)
+            cover_art_url =re.search('"(.*?)"',tag_attribute)
+            images.append(cover_art_url.group(0))
+        return images
+
+    def get_timestamp(self):
+        timestamp_now = datetime.now()
+        str_date_time = timestamp_now.strftime("%d%m%Y_%H%M%S_")  
+        return str_date_time
 
     def generate_database(self, artist, songs, genre_tags, total_num_plays,images,timestamp):
         artist_database= {
@@ -281,10 +218,9 @@ class Scrapper:
         "Details":artist_database,
         "Timestamp":timestamp,
         }
-
         return full_database
 
-    def make_data_folder(self,artist):
+    def make_data_folders(self,artist):
         current_dir = os.getcwd()
         raw_data_dir = current_dir +"\\raw_data"
 
@@ -300,7 +236,6 @@ class Scrapper:
 
         if not os.path.exists(image_save_dir):
             os.makedirs(image_save_dir)
-
         return artist_dir, image_save_dir
     
     def save_dict_data_as_json(self,artist,full_database,artist_dir):
@@ -308,14 +243,27 @@ class Scrapper:
             json.dump(full_database,fp,indent=4)
         database_dir =f'{artist_dir}\\{artist} soundcloud info.json'
         return database_dir
+    
+    def get_imgs(self,image_save_dir,database_dir,timestamp): 
+        with open(database_dir, 'r') as handle:
+            parsed= json.load(handle)
+            img_link_data=parsed['Details']['Image Link']
+            img_link_lists= []
+            i=0
 
-    def add_to_artist_list(self, search_word, artists):
-        artists.append(search_word)
-        return artists
+            for link in img_link_data:
+                img_link_lists.append(link)
+                url= link.replace('"', "")
+                url_new = url.replace("https","http")
+                response= requests.get(url_new)
+                if response.status_code:
+                    fp=open(f'{image_save_dir}\\{timestamp}{i}.jpg','wb')
+                    fp.write(response.content)
+                    fp.close()
+                i+=1
 
     def related_artists(self, driver, artists):
         driver.current_url
-        
         related_artists_links = driver.find_elements(by=By.XPATH, value= './/h3[@class="userBadge__username sc-type-light sc-text-secondary sc-text-h4"]')
 
         if related_artists_links[0] in artists:
@@ -337,31 +285,11 @@ class Scrapper:
             related_artists_links[2].find_element(by=By.XPATH, value= './/a').click()
 
         related_artists_links=driver.find_elements(by=By.XPATH, value= './/h3[@class="userBadge__username sc-type-light sc-text-secondary sc-text-h4"]')
-
         time.sleep(5)
-
         return driver
     
     def close(self,driver):
         driver.close()
-
-    def get_imgs(self,image_save_dir,database_dir,timestamp): 
-        with open(database_dir, 'r') as handle:
-            parsed= json.load(handle)
-            img_link_data=parsed['Details']['Image Link']
-            img_link_lists= []
-            i=0
-
-            for link in img_link_data:
-                img_link_lists.append(link)
-                url= link.replace('"', "")
-                url_new = url.replace("https","http")
-                response= requests.get(url_new)
-                if response.status_code:
-                    fp=open(f'{image_save_dir}\\{timestamp}{i}.jpg','wb')
-                    fp.write(response.content)
-                    fp.close()
-                i+=1
 
 ```
 
