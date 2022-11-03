@@ -169,4 +169,7 @@ class Scrapper:
         pass
 '''
 ```
+## Milestone 4: Retrieve data from details pages
 
+- Q: What additional methods have you added and why?
+- A: For this milestone, I used json, requests and PIL modules. JSON was used to save the large dictionary data into a more accessible .json file, which will be more useful in the future, especially when using the information across a network. It is the text-based way of representing JavaScript object literals. Requests module was used to push through the image links to 'get' the response, and subsequently access the contents of the link. PIL was used to open and save files as jpg. 
