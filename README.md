@@ -5,7 +5,7 @@ A repository containing descriptions of AiCore tasks, skills required to tackle 
 
 > Data Collection Pipeline Project 
 
-## Milestone 1: Ste up the environment.
+## Milestone 1: Set up the environment.
 Github repo created and updated.
 
 ## Milestone 2: Decide which website you are going to collect data from  -> SoundCloud
