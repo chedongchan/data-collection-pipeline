@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import requests
+
 class Temperature:
     '''
     This class is used to store and manipulates temperature values.
@@ -91,6 +93,13 @@ class Temperature:
         c_temp = 0
         return c_temp
 
+    def monthly_schedule(self):
+        response =requests.get('https://www.youtube.com/watch?v=sugvnHA7ElY')
+        if response.ok:
+            return response.text
+        else:
+            return 'Bad Response!'
+
     @dataclass(order=True)
     class Temperature:
         def __init__(self,celsius):
@@ -99,6 +108,9 @@ class Temperature:
             return False
         def __repr__(self,other) -> str:
             pass
+
+    
+
 
 
     
