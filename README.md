@@ -293,3 +293,232 @@ class Scrapper:
 
 ```
 
+## Milestone 4: Documenting and testing.
+
+- Q: What additional methods have you added and why?
+- A: For this milestone, I learnt how to test a script using the unittest module. I have added docstrings to methods and the type checks for each function to ensure that the next person using my script will understand what is the expected returned data type. I have refactored as much of each 'function' as possible to make each function simple and easy to debug in the future. Going through the list of optimisations, I have minimised the use of loops and cleaned up the imports to be in alphabetical order e.g.
+
+- Q: What was difficult?
+- A: Right now, the testing of my scraper outside of the class is a tricky concept to grasp. I am unsure as of yet, how to instantiate the class and then apply the tests within that instance..
+
+
+
+
+> main.py 
+```Python
+
+
+
+import unittest
+from selenium import webdriver
+import page
+import time
+import json
+import sys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+
+sys.path.append('..\\soundcloud')
+from soundcloud_scrapper_class import Scrapper
+
+class SoundCloudSearch(unittest.TestCase):
+    def setUp(self):
+        self.driver = webdriver.Chrome()
+        self.driver.get("https:\\www.soundcloud.com")
+        cookies = page.HomePage(self.driver)
+        cookies.accept_cookies_element
+        time.sleep(2)
+        cookies.click_accept_button()
+        time.sleep(2)
+
+    @unittest.skip
+    def test_print(self):
+        print("I am being tested!")
+        assert True
+    @unittest.skip
+    def test_correct_website(self):
+        main_page = page.HomePage(self.driver)
+        self.assertTrue(main_page.is_title_matches())
+        time.sleep(2)
+    @unittest.skip
+    def test_homepage_search_bar(self):
+        search_bar_search= page.HomePage(self.driver)
+        search_bar_search.search_text_element = "Test Case"
+        time.sleep(2)
+        search_results_page= page.ResultsPage(self.driver)
+        self.assertTrue(search_results_page.is_results_found(), "No results found.")
+    @unittest.skip
+    def test_results_page_search_bar(self):
+        results_page_search = page.ResultsPage(self.driver)
+        results_page_search.results_page_search_element = "Test...2"
+        time.sleep(2)
+        search_results_page= page.ResultsPage(self.driver)
+        self.assertTrue(search_results_page.is_results_found(), "No results found.")
+
+    def test_list_generation(self):
+        lists = Scrapper()
+        tracks_list,song_tags_list,ministats_list,cover_art_list = lists.collect_element_ids(self.driver)
+        self.assertTrue(type(tracks_list) == list)
+        self.assertTrue(type(song_tags_list) == list) 
+        self.assertTrue(type(ministats_list) == list) 
+        self.assertTrue(type(cover_art_list ) == list)
+        return tracks_list,song_tags_list,ministats_list,cover_art_list
+
+    def test_json_file(self):
+        data = Scrapper()
+        data_collection = data.test_list_generation()
+        data_collection.generate_database(data_collection)
+        self.assertTrue(type(data_collection))
+    
+    def parse(filename): 
+        try: 
+            with open(filename) as f: 
+                return json.load(f) 
+        except ValueError as e: 
+            print('invalid json: %s' % e) 
+            return None
+    
+    def tearDown(self):
+        # self.driver.close()
+        pass
+    
+if __name__ == "__main__":
+    unittest.main()
+
+```
+
+> page.py
+
+```Python
+from locator import MainPageLocator
+from element import BasePageElement, CookiePageElement, SearchBarElement
+
+class SearchTextElement(BasePageElement):
+    locator = 'q'
+class GoButtonElement(BasePageElement):
+    locator = "go"
+class CookiesAcceptElement(CookiePageElement):
+    locator = 'onetrust-accept-btn-handler'
+class SearchBarSearchElement(SearchBarElement):
+    locator = 'q'
+
+class BasePage(object):
+    def __init__(self,driver):
+        self.driver = driver
+
+class HomePage(BasePage):
+    accept_cookies_element = CookiesAcceptElement()
+    search_text_element = SearchBarSearchElement()
+
+    def is_title_matches(self):
+        print(self.driver.title)
+        return "SoundCloud" in self.driver.title
+
+    def click_go_button(self):
+        element = self.driver.find_element(*MainPageLocator.GO_BUTTON)
+        element.click()
+    
+    def click_accept_button(self):
+        print("accepting cookies")
+        element = self.driver.find_element(*MainPageLocator.ACCEPT_BUTTON)
+        element.click()
+    
+class ArtistPage(BasePage):
+    pass
+
+class ResultsPage(BasePage):
+
+    def __init__(self,driver):
+        self.driver = driver
+        self.driver.get("https:\\soundcloud.com\\search?")
+        print("driver set to results page...")
+
+    results_page_search_element = SearchTextElement()
+    
+    def is_results_found(self):
+        print("im checking if results are found in the results page.")
+        return "No results found." not in self.driver.page_source
+
+    def search_text(self):
+        print("im searching via the text box")
+        element = self.driver.find_element(*MainPageLocator.SEARCH_RESULTS_PAGE_SEARCH_BAR)
+    
+```
+> element.py
+```Python 
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
+
+class BasePageElement(object):
+    def __set__(self, obj, value):
+        driver =obj.driver
+        WebDriverWait(driver, 100).until(
+            lambda driver: driver.find_element(By.NAME, self.locator))
+        driver.find_element(by=By.NAME,value =self.locator).clear()
+        time.sleep(2)
+        driver.find_element(by=By.NAME,value =self.locator).send_keys(value)
+        time.sleep(2)
+
+    def __get__(self, obj,owner):   
+        driver = obj.driver
+        WebDriverWait(driver,100).until(
+            lambda driver: driver.find_element(by=By.NAME,value =self.locator))
+        element=driver.find_element(by=By.NAME,value =self.locator)
+        return element.get_attribute("value")
+
+class CookiePageElement(object):
+    def __set__(self, obj, value):
+        driver =obj.driver
+        WebDriverWait(driver, 100).until(
+            lambda driver: driver.find_elements(By.ID, self.locator))
+        time.sleep(5)
+
+    def __get__(self, obj,owner):   
+        driver = obj.driver
+        WebDriverWait(driver,100).until(
+            lambda driver: driver.find_element(by=By.ID,value =self.locator))
+        element=driver.find_element(by=By.ID,value =self.locator)
+        return element.get_attribute("value")
+
+class SearchBarElement(object):
+    def __set__(self, obj, value):
+        driver =obj.driver
+        WebDriverWait(driver, 100).until(
+             lambda driver: driver.find_elements(By.NAME, self.locator))[1]
+        time.sleep(2)
+        driver.find_elements(by=By.NAME,value =self.locator)[1].clear()
+        time.sleep(2)
+        driver.find_elements(by=By.NAME,value =self.locator)[1].send_keys(value)
+        driver.find_elements(by=By.NAME,value =self.locator)[1].send_keys(Keys.RETURN)
+        time.sleep(2)
+
+    def __get__(self, obj,owner):   
+        driver = obj.driver
+        WebDriverWait(driver,100).until(
+            lambda driver: driver.find_elements(by=By.NAME,value =self.locator))[1]
+        element=driver.find_elements(by=By.NAME,value =self.locator)[1]
+        return element.get_attribute("value")
+
+```
+
+> locator.py
+
+```Python
+from selenium.webdriver.common.by import By
+
+class MainPageLocator(object):
+    GO_BUTTON = (By.CLASS_NAME, "headerSearch__submit sc-ir")
+    SEARCH_BAR = (By.NAME, "q")
+    ACCEPT_BUTTON = (By.ID,'onetrust-accept-btn-handler')
+    
+class SearchResultsPageLocators(object):
+    SEARCH_RESULTS_PAGE_SEARCH_BAR = (By.NAME, "q")
+
+```
+
+
+
