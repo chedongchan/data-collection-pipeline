@@ -1,0 +1,30 @@
+version: "4.0"
+services:
+  selenium-hub:
+    image: selenium/hub
+    ports:
+      - 4444:4444
+
+  chrome:
+    image: selenium/node-chrome
+    ports:
+      - 4577
+    depends_on:
+      - selenium-hub
+
+  firefox:
+    image: selenium/node-firefox
+    ports:
+      - 4578
+    depends_on:
+      - selenium-hub
+
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 5555
+    depends_on:
+      - chrome
+

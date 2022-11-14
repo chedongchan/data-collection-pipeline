@@ -38,7 +38,7 @@ class ResultsPage(BasePage):
 
     def __init__(self,driver):
         self.driver = driver
-        self.driver.get("https:\\soundcloud.com\\search?")
+        self.driver.get("https:/soundcloud.com/search?q=test%20case")
         print("driver set to results page...")
 
     results_page_search_element = SearchTextElement()

@@ -38,9 +38,9 @@ class SearchBarElement(object):
     def __set__(self, obj, value):
         driver =obj.driver
         WebDriverWait(driver, 100).until(
-             lambda driver: driver.find_elements(By.NAME, self.locator))[1]
+             lambda driver: driver.find_elements(By.NAME, value= self.locator))[1]
         time.sleep(2)
-        driver.find_elements(by=By.NAME,value =self.locator)[1].clear()
+        driver.find_elements(by=By.NAME, value =self.locator)[1].clear()
         time.sleep(2)
         driver.find_elements(by=By.NAME,value =self.locator)[1].send_keys(value)
         driver.find_elements(by=By.NAME,value =self.locator)[1].send_keys(Keys.RETURN)
