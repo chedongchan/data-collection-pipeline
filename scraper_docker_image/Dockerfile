@@ -17,7 +17,7 @@ RUN wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`cu
 COPY . .
 
 # Install the required modules for scraper.
-RUN pip install -r requirements.txt
+RUN pip install -r scraper_docker_image/requirements.txt
 
 # Afterwards, we run container with this command
 ENTRYPOINT ["python3", "scraper/main.py"]

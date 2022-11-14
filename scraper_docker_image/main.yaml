@@ -26,6 +26,6 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: .
-        file: ./Dockerfile
+        file: ./scraper_docker_image/Dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/soundcloud_scraper:latest
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/soundcloud_scraper:finalversion
