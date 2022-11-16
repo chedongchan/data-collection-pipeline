@@ -540,4 +540,95 @@ class SearchResultsPageLocators(object):
 ```
 
 
+## Milestone 6: Containerising the scraper
 
+- Q: What did you learn in this milestone? 
+- A: I had to learn how to create a Docker image which would run my app in any OS - one of the benefits of using Docker. I had to learn some syntax for Ubuntu and Docker commands. 
+
+- Q: What was difficult? 
+- A: I initially thought that the task was to use the Remote Webdriver to essentially run my scraper in a virtual machine elsewhere setting up networks that depend on other docker containers. However, it was much simpler than that, where the task's focus was not that but instead to ensure I know how to containerise my app as a Dockerfile container and pushed to the hub, which can be pulled from any computer and be used in the local machine.
+
+The below code 
+
+```Dockerfile
+# Specify image:tag
+FROM python:3.9
+RUN pip install --no-cache-dir --upgrade pip
+
+# single line codes for RUN commands.
+
+# Download and install Chrome
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - &&\
+    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' &&\
+    apt-get update && apt-get -y install google-chrome-stable
+
+#Download and install ChromeDriver
+RUN wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip &&\
+    apt-get install -yqq unzip &&\
+    unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/
+
+# Copy data from docker context
+COPY . .
+
+# Install the required modules for scraper.
+RUN pip install -r scraper_docker_image/requirements.txt
+
+# Afterwards, we run container with this command.
+ENTRYPOINT ["python3", "scraper/main.py"]
+```
+
+In order for the selenium web scraper to work in all machines.. I had to change some lines of code in the scraper class file.
+
+```python
+class Scraper():
+    def __init__(self) -> None:
+            self.url = "https://www.soundcloud.com"
+            chrome_options = ChromeOptions()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--maximise")
+            chrome_options.add_argument("--disable-notifications")
+            chrome_options.add_argument('no-sandbox') 
+            chrome_options.add_argument("disable-dev-shm-usage")
+            self.driver = webdriver.Chrome(ChromeDriverManager().install(),options = chrome_options)
+```
+
+In order to run the scraper in a docker container means that the scraper must run headless. Few other arguments were used to ensure that the script does not run into any errors such as maximising the window and disabling any notifications. Instead of hard-coding the directory of the webdriver executable, I used the ChromeDriverManager package to install the driver, automatically setting the chromedriver version to be the latest one.
+
+## Milestone 7: Set up a CI/CD piperline for your Docker Image
+
+- Q: What did you learn in this milestone? 
+- A: I had to learn how to build and deploy my Docker image to Dockerhub with the aid of Github Actions. In order to do this, I had to set up Github secrets that authenticates communication between my dockerhub and github accounts. The github actions require a workflows main.yml file that instructs github to perform actions. In this case, everytime the repo is updated with a push commmand, it will login/check credentials, (re-)build the docker image and then push to dockerhub. As I push this updated README.md file, it will initiate the action.
+
+```yaml 
+name: soundcloud_scraper_docker_push
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v3
+    -
+      name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    -
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    -
+      name: Build and push
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./scraper_docker_image/Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/soundcloud_scraper:finalversion
+```

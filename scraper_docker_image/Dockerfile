@@ -1,7 +1,8 @@
 # Specify image:tag
-# single line for RUN commands.
 FROM python:3.9
 RUN pip install --no-cache-dir --upgrade pip
+
+# single line codes for RUN commands.
 
 # Download and install Chrome
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - &&\
@@ -19,6 +20,6 @@ COPY . .
 # Install the required modules for scraper.
 RUN pip install -r scraper_docker_image/requirements.txt
 
-# Afterwards, we run container with this command
+# Afterwards, we run container with this command.
 ENTRYPOINT ["python3", "scraper/main.py"]
 
