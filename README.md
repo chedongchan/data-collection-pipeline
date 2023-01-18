@@ -1,4 +1,11 @@
-# AiCore Data Collection Pipeline Documentation
+SoundCloud Website Data Scraper using Selenium in Python.  Get names, durations, images, number of times played, and genre tags of your favourite artists and also the related artists recommended by SoundCloud. 
+
+# Project Description
+
+I believe everyone is analytical to some extent. The musicians who create wonderful music are likely to have good knowledge and understanding of their craft but perhaps an under-appreciated aspect could be their immense exposure to other artists that came before them. In short, they have more data of previous successors. One aspiring musican might take this idea further. They might want to know all the musical metrics that an artist has or even better, all artists that fit the musician's preferences. SoundCloud has these metrics but to gather all information would simply be impossible considering that there could be 100s to 1000s of artists with many songs published. Therefore, in this case, a web scraper can be utilised to create a database of all these useful metrics, fully automated so that the musician can spend the time to work on their craft in the meantime.  skills used: python, selenium, docker, PIL    
+
+## This project is part of the AiCore Data Science Specialisation Programme
+I explain the challenges and hurdles that I faced throughout the Data Collection Pipeline using a milestone Q&A format.
 
 > Data Collection Pipeline Project 
 
