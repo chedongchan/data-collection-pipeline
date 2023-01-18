@@ -9,8 +9,6 @@ skills used: python, selenium, docker, PIL, A/B testing and CI/CD
 ## This project is part of the AiCore Data Science Specialisation Programme
 I explain the challenges and hurdles that I faced throughout the Data Collection Pipeline using a milestone Q&A format.
 
-Data Collection Pipeline Project 
-
 ## Milestone 1: Set up the environment.
 Github repo created and updated.
 
